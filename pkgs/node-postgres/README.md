@@ -1,4 +1,4 @@
-# drizzle-orm-cloudflare/node-postgres
+# @drizzle-orm-cloudflare/node-postgres
 
 Drizzle ORM adapter for PostgreSQL with **AsyncLocalStorage** support for Cloudflare Workers.
 
@@ -10,7 +10,7 @@ Drizzle ORM adapter for PostgreSQL with **AsyncLocalStorage** support for Cloudf
 ## Installation
 
 ```bash
-bun add drizzle-orm-cloudflare/node-postgres
+bun add @drizzle-orm-cloudflare/node-postgres
 ```
 
 ## Usage
