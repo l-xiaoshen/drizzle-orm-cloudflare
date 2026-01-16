@@ -2,6 +2,11 @@
 
 Cloudflare Workers adapters for Drizzle ORM with AsyncLocalStorage support.
 
+> **Note:** This package requires the **beta version** of `drizzle-orm`. Install it with:
+> ```bash
+> bun add drizzle-orm@beta
+> ```
+
 ## Packages
 
 - [@drizzle-orm-cloudflare/node-postgres](./pkgs/node-postgres/) — PostgreSQL adapter
