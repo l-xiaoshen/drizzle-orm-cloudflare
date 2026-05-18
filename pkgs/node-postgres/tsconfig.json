@@ -12,6 +12,7 @@
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
     "noEmit": false,
+    "rootDir": "./src",
     "outDir": "./dist",
 
     // Best practices

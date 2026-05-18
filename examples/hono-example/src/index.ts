@@ -6,7 +6,7 @@ import { count } from "drizzle-orm";
 
 
 
-const db = drizzle.withContext({ schema });
+const db = drizzle.withContext({});
 
 const app = new Hono<{
     Bindings: Cloudflare.Env;

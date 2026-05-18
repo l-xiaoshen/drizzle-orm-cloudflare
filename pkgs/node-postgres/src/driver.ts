@@ -1,16 +1,16 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-import pg, { type Pool, type PoolConfig } from 'pg';
 import type { Cache } from 'drizzle-orm/cache/core/cache';
 import { entityKind } from 'drizzle-orm/entity';
 import type { Logger } from 'drizzle-orm/logger';
 import { DefaultLogger } from 'drizzle-orm/logger';
-import { PgAsyncDatabase } from 'drizzle-orm/pg-core/async/db';
-import { PgDialect } from 'drizzle-orm/pg-core/dialect';
-import type { AnyRelations, EmptyRelations } from 'drizzle-orm/relations';
-import type { DrizzlePgConfig } from 'drizzle-orm/pg-core/utils';
-import { nodePgCodecs } from 'drizzle-orm/node-postgres/codecs';
 import type { NodePgClient, NodePgQueryResultHKT } from 'drizzle-orm/node-postgres';
 import { NodePgSession } from 'drizzle-orm/node-postgres';
+import { nodePgCodecs } from 'drizzle-orm/node-postgres/codecs';
+import { PgAsyncDatabase } from 'drizzle-orm/pg-core/async/db';
+import { PgDialect } from 'drizzle-orm/pg-core/dialect';
+import type { DrizzlePgConfig } from 'drizzle-orm/pg-core/utils';
+import type { AnyRelations, EmptyRelations } from 'drizzle-orm/relations';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import pg from 'pg';
 
 export interface PgDriverOptions {
     logger?: Logger;
@@ -53,95 +53,10 @@ export class NodePgDatabase<
     static override readonly [entityKind]: string = 'NodePgDatabase';
 }
 
-function construct<
-    TRelations extends AnyRelations = EmptyRelations,
-    TClient extends NodePgClient = NodePgClient,
->(
-    client: TClient,
-    config: DrizzlePgConfig<TRelations> = {},
-): NodePgDatabase<TRelations> & {
-    $client: NodePgClient extends TClient ? Pool : TClient;
-} {
-    const dialect = new PgDialect({
-        useJitMappers: true,
-        codecs: config.codecs ?? nodePgCodecs,
-    });
-    let logger;
-    if (config.logger === true) {
-        logger = new DefaultLogger();
-    } else if (config.logger !== false) {
-        logger = config.logger;
-    }
 
-    const relations = config.relations ?? {} as TRelations;
-    const session = new NodePgSession(client, dialect, relations, {
-        logger,
-        cache: config.cache,
-    });
-
-    const db = new NodePgDatabase(
-        dialect,
-        session,
-        relations,
-    ) as NodePgDatabase<TRelations>;
-    (<any>db).$client = client;
-    (<any>db).$cache = config.cache;
-    if ((<any>db).$cache) {
-        (<any>db).$cache['invalidate'] = config.cache?.onMutate;
-    }
-
-    return db as any;
-}
-
-export function drizzle<
-    TRelations extends AnyRelations = EmptyRelations,
-    TClient extends NodePgClient = Pool,
->(
-    ...params:
-        | [
-            string,
-        ]
-        | [
-            string,
-            DrizzlePgConfig<TRelations>,
-        ]
-        | [
-            & DrizzlePgConfig<TRelations>
-            & ({
-                client: TClient;
-            } | {
-                connection: string | PoolConfig;
-            }),
-        ]
-): NodePgDatabase<TRelations> & {
-    $client: NodePgClient extends TClient ? Pool : TClient;
-} {
-    if (typeof params[0] === 'string') {
-        const instance = new pg.Pool({
-            connectionString: params[0],
-        });
-
-        return construct(instance, params[1] as DrizzlePgConfig<TRelations> | undefined) as any;
-    }
-
-    const { connection, client, ...drizzleConfig } = params[0] as (
-        & ({ connection?: PoolConfig | string; client?: TClient })
-        & DrizzlePgConfig<TRelations>
-    );
-
-    if (client) return construct(client, drizzleConfig);
-
-    const instance = typeof connection === 'string'
-        ? new pg.Pool({
-            connectionString: connection,
-        })
-        : new pg.Pool(connection!);
-
-    return construct(instance, drizzleConfig) as any;
-}
 
 /** Database instance with AsyncLocalStorage context support for Cloudflare Workers */
-export interface NodePgDatabaseWithContext<
+export class NodePgDatabaseWithContext<
     TRelations extends AnyRelations = EmptyRelations,
 > extends NodePgDatabase<TRelations> {
     /**
@@ -164,71 +79,7 @@ export interface NodePgDatabaseWithContext<
      *   return await db.select().from(users);
      * });
      */
-    run<T>(
-        clientOrFactory: NodePgClient | (() => NodePgClient),
-        callback: () => Promise<T>,
-    ): Promise<T>;
-
-    /**
-     * Run a callback with a request-scoped database client created from a connection string.
-     *
-     * @param connectionString - A PostgreSQL connection string
-     * @param callback - The async callback to run within the database context
-     * @returns The result of the callback
-     *
-     * @example
-     * await db.run(env.DATABASE_URL, async () => {
-     *   return await db.select().from(users);
-     * });
-     */
-    run<T>(
-        connectionString: string,
-        callback: () => Promise<T>,
-    ): Promise<T>;
-}
-
-function constructWithContext<
-    TRelations extends AnyRelations = EmptyRelations,
->(
-    config: DrizzlePgConfig<TRelations> = {},
-): NodePgDatabaseWithContext<TRelations> {
-    const dialect = new PgDialect({
-        useJitMappers: true,
-        codecs: config.codecs ?? nodePgCodecs,
-    });
-    let logger: Logger | undefined;
-    if (config.logger === true) {
-        logger = new DefaultLogger();
-    } else if (config.logger !== false) {
-        logger = config.logger;
-    }
-
-    const relations = config.relations ?? {} as TRelations;
-
-    const proxyClient = {
-        query: (queryTextOrConfig: any, values?: any) => {
-            const client = getClientFromContext();
-            return client.query(queryTextOrConfig, values);
-        },
-    } as NodePgClient;
-
-    const session = new NodePgSession(proxyClient, dialect, relations, {
-        logger,
-        cache: config.cache,
-    });
-
-    const db = new NodePgDatabase(
-        dialect,
-        session,
-        relations,
-    ) as NodePgDatabaseWithContext<TRelations>;
-
-    (<any>db).$cache = config.cache;
-    if ((<any>db).$cache) {
-        (<any>db).$cache['invalidate'] = config.cache?.onMutate;
-    }
-
-    db.run = async function <T>(
+    async run<T>(
         clientOrFactory: NodePgClient | (() => NodePgClient) | string,
         callback: () => Promise<T>,
     ): Promise<T> {
@@ -245,21 +96,51 @@ function constructWithContext<
         }
 
         return asyncLocalStorage.run(context, callback);
-    };
+    }
+}
+
+function constructWithContext<
+    TRelations extends AnyRelations = EmptyRelations,
+>(
+    config: DrizzlePgConfig<TRelations> = {},
+): NodePgDatabaseWithContext<TRelations> {
+    const dialect = new PgDialect({
+        useJitMappers: config.jit,
+        codecs: config.codecs ?? nodePgCodecs,
+    });
+    let logger: Logger | undefined;
+    if (config.logger === true) {
+        logger = new DefaultLogger();
+    } else if (config.logger !== false) {
+        logger = config.logger;
+    }
+
+    const relations = config.relations ?? {} as TRelations;
+
+    const session = new NodePgSession(undefined as unknown as NodePgClient, dialect, relations, {
+        logger,
+        cache: config.cache,
+    });
+
+    Object.defineProperty(session, 'client', {
+        get: () => getClientFromContext(),
+    });
+
+    const db = new NodePgDatabaseWithContext<TRelations>(
+        dialect,
+        session,
+        relations,
+    );
+
+    (<any>db).$cache = config.cache;
+    if ((<any>db).$cache) {
+        (<any>db).$cache['invalidate'] = config.cache?.onMutate;
+    }
 
     return db;
 }
 
 export namespace drizzle {
-    export function mock<
-        TRelations extends AnyRelations = EmptyRelations,
-    >(
-        config?: DrizzlePgConfig<TRelations>,
-    ): NodePgDatabase<TRelations> & {
-        $client: '$client is not available on drizzle.mock()';
-    } {
-        return construct({} as any, config) as any;
-    }
 
     /**
      * Creates a context-aware database instance for use in Cloudflare Workers.
