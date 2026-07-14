@@ -7,7 +7,7 @@ import { drizzle } from "@drizzle-orm-cloudflare/node-postgres";
 import { Hono } from "hono";
 import * as schema from "./schema";
 
-const db = drizzle.withContext({ schema });
+const db = drizzle.withContext();
 
 const app = new Hono<{ Bindings: Cloudflare.Env }>();
 

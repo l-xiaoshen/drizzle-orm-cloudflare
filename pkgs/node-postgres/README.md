@@ -2,15 +2,15 @@
 
 Drizzle ORM adapter for PostgreSQL with **AsyncLocalStorage** support for Cloudflare Workers.
 
-> **Note:** This package requires the **beta version** of `drizzle-orm`. Install it with:
+> **Note:** This package requires `drizzle-orm@1.0.0-rc.4`.
 > ```bash
-> bun add drizzle-orm@beta
+> bun add drizzle-orm@1.0.0-rc.4
 > ```
 
 ## Installation
 
 ```bash
-bun add @drizzle-orm-cloudflare/node-postgres
+bun add @drizzle-orm-cloudflare/node-postgres drizzle-orm@1.0.0-rc.4
 ```
 
 ## Usage
@@ -18,10 +18,10 @@ bun add @drizzle-orm-cloudflare/node-postgres
 Use `drizzle.withContext()` to create a request-scoped database instance:
 
 ```typescript
-import { drizzle } from 'drizzle-orm-cloudflare/node-postgres';
+import { drizzle } from '@drizzle-orm-cloudflare/node-postgres';
 import * as schema from './schema';
 
-const db = drizzle.withContext({ schema });
+const db = drizzle.withContext();
 
 export default {
   async fetch(request: Request, env: Env) {
@@ -62,7 +62,7 @@ db.run(
 
 ### `drizzle.withContext(config?)`
 
-Creates a context-aware database instance. Accepts standard Drizzle config options (`schema`, `logger`, `casing`).
+Creates a context-aware database instance. Accepts Drizzle PostgreSQL config options such as `relations`, `logger`, `cache`, `jit`, and `codecs`.
 
 ### `db.run(clientOrFactory, callback)`
 

@@ -2,9 +2,9 @@
 
 Cloudflare Workers adapters for Drizzle ORM with AsyncLocalStorage support.
 
-> **Note:** This package requires the **beta version** of `drizzle-orm`. Install it with:
+> **Note:** This package requires the release candidate version of `drizzle-orm`. Install it with:
 > ```bash
-> bun add drizzle-orm@beta
+> bun add drizzle-orm@1.0.0-rc.4
 > ```
 
 ## Packages
@@ -14,14 +14,14 @@ Cloudflare Workers adapters for Drizzle ORM with AsyncLocalStorage support.
 ## Quick start
 
 ```bash
-bun add @drizzle-orm-cloudflare/node-postgres drizzle-orm
+bun add @drizzle-orm-cloudflare/node-postgres drizzle-orm@1.0.0-rc.4
 ```
 
 ```typescript
 import { drizzle } from "@drizzle-orm-cloudflare/node-postgres";
 import * as schema from "./schema";
 
-const db = drizzle.withContext({ schema });
+const db = drizzle.withContext();
 
 export default {
   async fetch(request: Request, env: Env) {

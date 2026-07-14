@@ -53,8 +53,6 @@ export class NodePgDatabase<
     static override readonly [entityKind]: string = 'NodePgDatabase';
 }
 
-
-
 /** Database instance with AsyncLocalStorage context support for Cloudflare Workers */
 export class NodePgDatabaseWithContext<
     TRelations extends AnyRelations = EmptyRelations,
@@ -141,17 +139,16 @@ function constructWithContext<
 }
 
 export namespace drizzle {
-
     /**
      * Creates a context-aware database instance for use in Cloudflare Workers.
      * Uses AsyncLocalStorage to maintain request-scoped database connections.
      *
-     * @param config - Drizzle configuration (schema, relations, logger, cache, casing)
+     * @param config - Drizzle configuration (relations, logger, cache, jit, codecs)
      * @returns A database instance with a `run()` method for request-scoped execution
      *
      * @example
      * // Setup (module level)
-     * const db = drizzle.withContext({ schema });
+     * const db = drizzle.withContext({ relations });
      *
      * // Usage in Cloudflare Worker fetch handler
      * export default {

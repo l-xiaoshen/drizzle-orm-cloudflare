@@ -3,10 +3,7 @@ import { Hono } from "hono";
 import * as schema from "./schema";
 import { count } from "drizzle-orm";
 
-
-
-
-const db = drizzle.withContext({});
+const db = drizzle.withContext();
 
 const app = new Hono<{
     Bindings: Cloudflare.Env;
